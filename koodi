@@ -1,0 +1,44 @@
+import tensorflow as tf
+
+# Ladataan MNIST-käsinkirjoitettujen numeroiden datasetti
+mnist = tf.keras.datasets.mnist
+(train_images, train_labels), (test_images, test_labels) = mnist.load_data()
+
+# Normalisoidaan kuvien pikseliarvot välille [0, 1]
+train_images = train_images / 255.0
+test_images = test_images / 255.0
+
+# Määritetään ja koulutetaan konvoluutioverkko
+model = tf.keras.Sequential([
+    tf.keras.layers.Conv2D(32, (3, 3), activation='relu', input_shape=(28, 28, 1)),
+    tf.keras.layers.MaxPooling2D((2, 2)),
+    tf.keras.layers.Conv2D(64, (3, 3), activation='relu'),
+    tf.keras.layers.MaxPooling2D((2, 2)),
+    tf.keras.layers.Conv2D(64, (3, 3), activation='relu'),
+    tf.keras.layers.Flatten(),
+    tf.keras.layers.Dense(64, activation='relu'),
+    tf.keras.layers.Dense(10, activation='softmax')
+])
+
+model.compile(optimizer='adam',
+              loss='sparse_categorical_crossentropy',
+              metrics=['accuracy'])
+
+model.fit(train_images.reshape(-1, 28, 28, 1), train_labels, epochs=5)
+
+# Evaluoidaan malli testidatalla
+test_loss, test_acc = model.evaluate(test_images.reshape(-1, 28, 28, 1), test_labels)
+print('Test accuracy:', test_acc)
+
+# Tehdään ennuste kuvasta
+def predict_number(image):
+    image = tf.image.rgb_to_grayscale(image)
+    image = tf.image.resize(image, (28, 28))
+    image = tf.cast(image, tf.float32) / 255.0
+    prediction = model.predict(image.numpy().reshape(-1, 28, 28, 1))
+    return tf.argmax(prediction, axis=1).numpy()[0]
+
+# Testataan koodia ennustamalla kuvasta numero
+# Oletetaan, että image on ladattu kuva
+predicted_number = predict_number(image)
+print('Predicted number:', predicted_number)
